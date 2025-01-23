@@ -1,7 +1,7 @@
 //1. Типы данных для моделей
 // Интерфейс продукта
 interface Product {
-    id: string; //уникальный идентификатор товара ID
+    id: number; //уникальный идентификатор товара ID
     title: string; //наименование товара
     description: string; //описание товара
     image: string; // url изображения товара
@@ -10,14 +10,14 @@ interface Product {
 }
 //класс продукта
 class ProductClass implements Product {
-    private _id: string;
+    private _id: number;
     private _title: string;
     private _description: string;
     private _image: string;
     private _category: string;
     private _price: number | null; 
 
-    constructor(id: string, title: string, description: string, image: string, category: string, price: number | null) {
+    constructor(id: number, title: string, description: string, image: string, category: string, price: number | null) {
         this._id = id;
         this._title = title;
         this._description = description;
@@ -26,7 +26,7 @@ class ProductClass implements Product {
         this._price = price;
     }
     //Геттеры и сеттеры для соответствия интерфейсу
-    get id(): string {
+    get id(): number {
         return this._id;
     }
     get title(): string {
@@ -47,12 +47,25 @@ class ProductClass implements Product {
     set price(value: number | null) {
         this._price = value;
     }
+}
 
-    static getCatalog(products: Product[]): Product[] {
-        return products;
+//интерфейс ProductCatalog
+interface ProductCatalog {
+    getCatalog(): Product[];
+    populateCatalog(products: Product[]): void;
+}
+
+class ProductCatalogClass implements ProductCatalog {
+    private _products: Product[] = [];
+
+    // Возвращает список продуктов
+    getCatalog(): Product[] {
+        return this._products;
     }
-    static populateCatalog(products: Product[]): void {
-        console.log("В каталог добавлен товар:", products);
+
+    // Заполняет каталог продуктов
+    populateCatalog(products: Product[]): void {
+        this._products = products;
     }
 }
 
@@ -116,13 +129,12 @@ class CustomerDataClass implements CustomerData {
         console.log(`${product.title} доавлен в корзину.`);
     }
     
-    removeFromCart(productId: string): void {
-        this._cartItems = this._cartItems.filter((product) => product.id !== productId);
-        console.log(`Товар с ID ${productId} удален из корзины.`);
+    removeFromCart(productId: number): void {
+        this._cartItems = this._cartItems.filter(item => item.id !== productId);
     }
     
     getCartTotal(): number {
-        return this._cartItems.reduce((total, product) => total + (product.price || 0), 0);
+        return this._cartItems.reduce((total, item) => total + item.price, 0);
     }
     
     clearCart(): void {
@@ -131,11 +143,7 @@ class CustomerDataClass implements CustomerData {
     }
     
     validateData(): boolean {
-        if (!this._name || !this._email || !this._phone || !this._address) {
-          console.error("Все поля должны быть заполнены.");
-          return false;
-        }
-        return true;
+        return !!(this.name && this.email && this.phone && this.address && this.paymentMethod);
     }
 }
 
@@ -217,21 +225,84 @@ enum AppEvents {
   
 // 6. Интерфейс для отображений
 interface View {
-    renderProducts(products: Product[]): void; // Отображение списка товаров
-    updateCart(cart: Product[]): void;         // Обновление корзины
-    showOrderSummary(order: CustomerData): void;      // Отображение информации о заказе
-}
+    renderContent(content: any): void; // Отрисовывает переданный контент
+    updateUI(data: any): void;        // Обновляет пользовательский интерфейс
+  }
   
 class ViewClass implements View {
-    renderProducts(products: Product[]): void {
-      console.log("Продукты:", products);
+    renderContent(content: any): void {
+      console.log("Rendering content:", content);
     }
   
-    public updateCart(cart: Product[]): void {
-      console.log("Корзина обновлена:", cart);
+    updateUI(data: any): void {
+      console.log("Updating UI with data:", data);
     }
+}
+
+interface PaymentData {
+    paymentMethod: string; // "online" | "cash"
+    address: string;
+}
+
+interface ContactData {
+    email: string;
+    phone: string;
+}
+
+//Класс для экрана витрины
+class MainScreen extends ViewClass {
+    showProducts(products: Product[]): void {
+      this.renderContent(products);
+      console.log("Displaying products on the main screen:", products);
+    }
+}
   
-    public showOrderSummary(order: CustomerData): void {
-      console.log("Заказ:", order);
+//Класс для экрана деталей товара
+class ProductDetailsScreen extends ViewClass {
+    showProductDetails(product: Product): void {
+      this.renderContent(product);
+      console.log("Детали товара отображены", product);
     }
-  }
+}
+  
+//Класс для экрана корзины
+class CartScreen extends ViewClass {
+    showCart(cart: Product[]): void {
+        this.renderContent(cart);
+        console.log("Содержимое корзины отображено.");
+    }
+}
+
+//Класс для экрана выбора способа оплаты и адреса доставки
+class CheckoutPaymentScreen extends ViewClass {
+    showPaymentForm(): void {
+        this.renderContent("Форма выбора способа оплаты и ввода адреса");
+        console.log("Форма оплаты отображена.");
+    }
+
+    collectPaymentData(): PaymentData {
+        console.log("Сбор данных о платеже.");
+        return { paymentMethod: "online", address: "123 Example Street" };
+    }
+}
+  
+//Класс для экрана ввода email и телефона
+class CheckoutContactScreen extends ViewClass {
+    showContactForm(): void {
+        this.renderContent("Форма ввода контактных данных");
+        console.log("Форма ввода email и телефона отображена.");
+    }
+
+    collectContactData(): ContactData {
+        console.log("Сбор контактных данных.");
+        return { email: "example@example.com", phone: "+1234567890" };
+    }
+}
+  
+//Класс для экрана успешного завершения заказа
+class SuccessScreen extends ViewClass {
+    showSuccessMessage(): void {
+        this.renderContent("Ваш заказ успешно оформлен!");
+        console.log("Сообщение об успешном заказе отображено.");
+    }
+}
